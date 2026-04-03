@@ -108,7 +108,7 @@ class GeocodingService {
 
     const response = await fetch(`${url}?${params}`, {
       headers: {
-        'User-Agent': 'HealNet-Lite/1.0 (your-email@example.com)'
+        'User-Agent': 'HealNet-Lite/1.0 (https://github.com/rickyg242/healnet-lite)'
       }
     });
 

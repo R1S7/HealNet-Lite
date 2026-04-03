@@ -186,7 +186,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       };
 
       // Sign up user with Supabase Auth
-      const { error } = await supabase.auth.signUp({
+      const { data: signUpData, error } = await supabase.auth.signUp({
         email: userData.email,
         password: userData.password,
         options: {
@@ -199,13 +199,15 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         return { success: false, error: error.message };
       }
 
+      const userId = signUpData.user?.id;
+
       // Create donor or organization record
       if (userData.accountType === 'donor') {
         const { error: donorError } = await supabase
           .from('donors')
           .insert([
             {
-              user_id: supabase.auth.user()?.id,
+              user_id: userId,
               first_name: userData.firstName,
               last_name: userData.lastName,
               phone: userData.phone,
@@ -222,7 +224,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           .from('organizations')
           .insert([
             {
-              user_id: supabase.auth.user()?.id,
+              user_id: userId,
               organization_name: userData.organizationName,
               contact_person: userData.contactPerson,
               phone: userData.phone,
