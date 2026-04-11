@@ -40,65 +40,46 @@ class DistanceService {
   }
 
   /**
-   * Calculate driving distance and time using Mapbox Directions API
+   * Calculate driving distance and time using OSRM (Open Source Routing Machine).
+   * Free, no API key required, powered by OpenStreetMap.
+   * Falls back to Haversine straight-line estimate if the request fails.
    */
   async calculateDrivingDistance(
     origin: { lat: number; lng: number },
     destination: { lat: number; lng: number },
     profile: 'driving' | 'walking' | 'cycling' = 'driving'
   ): Promise<DistanceResult> {
-    const apiKey = import.meta.env.VITE_MAPBOX_ACCESS_TOKEN;
-    
-    if (!apiKey) {
-      // Fallback to straight-line distance if no API key
-      const straightLineKm = this.calculateStraightLineDistance(
-        origin.lat, origin.lng, 
-        destination.lat, destination.lng
-      );
-      
-      return {
-        distanceKm: straightLineKm,
-        straightLineKm,
-        drivingTimeMinutes: this.estimateDrivingTime(straightLineKm),
-        logisticsCost: this.estimateLogisticsCost(straightLineKm)
-      };
-    }
+    const straightLineKm = this.calculateStraightLineDistance(
+      origin.lat, origin.lng,
+      destination.lat, destination.lng
+    );
+
+    // Map profile names to OSRM equivalents
+    const osrmProfile = profile === 'cycling' ? 'bike' : profile === 'walking' ? 'foot' : 'car';
 
     try {
-      const coordinates = [
-        `${origin.lng},${origin.lat}`,
-        `${destination.lng},${destination.lat}`
-      ].join(';');
-      
-      const url = `https://api.mapbox.com/directions/v5/mapbox/${profile}/${coordinates}`;
-      const params = new URLSearchParams({
-        access_token: apiKey,
-        geometries: 'geojson',
-        overview: 'simplified',
-        alternatives: 'false',
-        steps: 'false',
-        annotations: 'distance,duration'
+      const coords = `${origin.lng},${origin.lat};${destination.lng},${destination.lat}`;
+      const url = `https://router.project-osrm.org/route/v1/${osrmProfile}/${coords}?overview=false`;
+
+      const response = await fetch(url, {
+        headers: {
+          'User-Agent': 'HealNet-Lite/1.0 (https://github.com/rickyg242/healnet-lite)'
+        }
       });
 
-      const response = await fetch(`${url}?${params}`);
-      
       if (!response.ok) {
-        throw new Error(`Mapbox API error: ${response.statusText}`);
+        throw new Error(`OSRM API error: ${response.statusText}`);
       }
 
       const data = await response.json();
-      
+
       if (!data.routes || data.routes.length === 0) {
         throw new Error('No route found');
       }
 
       const route = data.routes[0];
-      const distanceKm = route.distance / 1000; // Convert meters to km
-      const drivingTimeMinutes = route.duration / 60; // Convert seconds to minutes
-      const straightLineKm = this.calculateStraightLineDistance(
-        origin.lat, origin.lng, 
-        destination.lat, destination.lng
-      );
+      const distanceKm = route.distance / 1000;       // meters → km
+      const drivingTimeMinutes = route.duration / 60; // seconds → minutes
 
       return {
         distanceKm,
@@ -107,14 +88,8 @@ class DistanceService {
         logisticsCost: this.estimateLogisticsCost(distanceKm)
       };
     } catch (error) {
-      console.error('Error calculating driving distance:', error);
-      
-      // Fallback to straight-line distance if API fails
-      const straightLineKm = this.calculateStraightLineDistance(
-        origin.lat, origin.lng, 
-        destination.lat, destination.lng
-      );
-      
+      console.warn('OSRM routing unavailable, falling back to straight-line estimate:', error);
+
       return {
         distanceKm: straightLineKm,
         straightLineKm,

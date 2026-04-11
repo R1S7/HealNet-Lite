@@ -2,8 +2,7 @@
   "build": {
     "env": {
       "VITE_SUPABASE_URL": "@vite_supabase_url",
-      "VITE_SUPABASE_ANON_KEY": "@vite_supabase_anon_key",
-      "VITE_MAPBOX_ACCESS_TOKEN": "@vite_mapbox_access_token"
+      "VITE_SUPABASE_ANON_KEY": "@vite_supabase_anon_key"
     },
     "nodeVersion": "20.x"
   },
