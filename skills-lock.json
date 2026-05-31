@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "skills": {
+    "claude-for-safari": {
+      "source": "SDLLL/claude-for-safari",
+      "sourceType": "github",
+      "skillPath": "SKILL.md",
+      "computedHash": "071f8482b4fa2f6707421d9875853c33b6851d3f47a5a27b6ae466689a653e6b"
+    }
+  }
+}
